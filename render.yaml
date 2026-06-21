@@ -1,0 +1,22 @@
+# Declarative Render deploy config.
+# When this repo is connected in the Render dashboard via "New > Blueprint",
+# Render reads this file and provisions the service automatically.
+# (You can also skip this and configure the service manually in the dashboard —
+# both routes work. This just makes the setup reproducible/version-controlled.)
+
+services:
+  - type: web
+    name: ai-native-diagnostic-api
+    runtime: node
+    rootDir: v3-backend
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        sync: false   # set manually in the Render dashboard — never store secrets in this file
+      - key: ALLOWED_ORIGINS
+        sync: false   # e.g. https://yourproject.carrd.co
+      - key: NODE_VERSION
+        value: 20.11.0

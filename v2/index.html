@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The AI-Native Team Diagnostic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1110;
+    --paper:#F7F5F0;
+    --paper-raised:#FCFBF8;
+    --signal:#FF5A1F;
+    --signal-dim:#FFE4D6;
+    --slate:#6B6E68;
+    --rule:#D8D4C8;
+    --rule-dark:#3a3d3a;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--signal); color:var(--paper);}
+
+  .display{font-family:'Fraunces',serif;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+
+  /* ---------- layout shell ---------- */
+  .wrap{
+    max-width:760px;
+    margin:0 auto;
+    padding:0 28px 160px;
+  }
+
+  /* ---------- vitals monitor (fixed score readout) ---------- */
+  .vitals{
+    position:fixed;
+    top:0; left:0; right:0;
+    z-index:50;
+    background:rgba(247,245,240,0.92);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--rule);
+  }
+  .vitals-inner{
+    max-width:760px;
+    margin:0 auto;
+    padding:14px 28px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+  }
+  .vitals-mark{
+    font-size:13px;
+    letter-spacing:0.02em;
+    color:var(--ink);
+    font-weight:600;
+    white-space:nowrap;
+  }
+  .vitals-track{
+    flex:1;
+    height:4px;
+    background:var(--rule);
+    border-radius:2px;
+    overflow:hidden;
+    position:relative;
+  }
+  .vitals-fill{
+    height:100%;
+    background:var(--ink);
+    width:0%;
+    transition:width 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  .vitals-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--slate);
+    white-space:nowrap;
+    min-width:64px;
+    text-align:right;
+  }
+  .vitals-score b{color:var(--ink); font-weight:700;}
+  .vitals-save{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--slate);
+    white-space:nowrap;
+    display:flex;
+    align-items:center;
+    gap:6px;
+    flex-shrink:0;
+  }
+  .vitals-save-dot{
+    width:6px; height:6px;
+    border-radius:50%;
+    background:var(--rule-dark);
+    transition:background 0.2s ease;
+  }
+  .vitals-save-dot.saved{background:#2E7D4F;}
+  .vitals-save-dot.saving{background:var(--signal);}
+
+  /* ---------- hero ---------- */
+  .hero{
+    padding:140px 0 64px;
+    border-bottom:1px solid var(--rule);
+  }
+  .hero-eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--signal);
+    margin-bottom:18px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .hero-eyebrow::before{
+    content:'';
+    width:8px; height:8px;
+    background:var(--signal);
+    border-radius:50%;
+    flex-shrink:0;
+  }
+  h1.hero-title{
+    font-size:clamp(34px, 6vw, 54px);
+    line-height:1.04;
+    font-weight:600;
+    margin:0 0 22px;
+    letter-spacing:-0.01em;
+  }
+  .hero-title em{
+    font-style:italic;
+    font-weight:500;
+    color:var(--slate);
+  }
+  .hero-sub{
+    font-size:17px;
+    line-height:1.6;
+    color:var(--slate);
+    max-width:54ch;
+    margin:0 0 8px;
+  }
+  .hero-meta{
+    margin-top:32px;
+    display:flex;
+    gap:28px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--slate);
+    flex-wrap:wrap;
+  }
+  .hero-meta span b{color:var(--ink);}
+
+  .hero-name{
+    margin-top:28px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    max-width:380px;
+  }
+  .hero-name label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--slate);
+    white-space:nowrap;
+  }
+  .hero-name input{
+    flex:1;
+    border:none;
+    border-bottom:1.5px solid var(--rule-dark);
+    background:transparent;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    color:var(--ink);
+    padding:4px 2px;
+  }
+  .hero-name input:focus{outline:none; border-color:var(--signal);}
+  .hero-name input::placeholder{color:#B5B7B0;}
+  .hero-name-hint{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--slate);
+    margin-top:8px;
+    max-width:54ch;
+    line-height:1.5;
+  }
+
+  /* ---------- section scaffolding ---------- */
+  section.step{
+    padding:72px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .step-head{
+    display:flex;
+    align-items:baseline;
+    gap:14px;
+    margin-bottom:8px;
+  }
+  .step-num{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--signal);
+    font-weight:700;
+  }
+  .step-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--slate);
+  }
+  h2.step-title{
+    font-size:clamp(24px,3.6vw,32px);
+    font-weight:600;
+    margin:6px 0 14px;
+    letter-spacing:-0.01em;
+  }
+  .step-intro{
+    font-size:15.5px;
+    line-height:1.65;
+    color:var(--slate);
+    max-width:58ch;
+    margin-bottom:36px;
+  }
+
+  /* ---------- Step 1: flow visualizer ---------- */
+  .flow-rail{
+    display:flex;
+    align-items:stretch;
+    gap:4px;
+    margin:36px 0 28px;
+    overflow-x:auto;
+    padding-bottom:8px;
+  }
+  .flow-node{
+    flex:1;
+    min-width:88px;
+    text-align:center;
+    cursor:pointer;
+    user-select:none;
+  }
+  .flow-bubble{
+    border:1.5px solid var(--rule-dark);
+    background:var(--paper-raised);
+    border-radius:8px;
+    padding:14px 6px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    line-height:1.3;
+    transition:all 0.2s ease;
+    position:relative;
+  }
+  .flow-node.endpoint .flow-bubble{
+    background:var(--ink);
+    color:var(--paper);
+    border-color:var(--ink);
+    font-weight:700;
+  }
+  .flow-node:not(.endpoint):hover .flow-bubble{
+    border-color:var(--ink);
+    transform:translateY(-2px);
+  }
+  .flow-node.selected .flow-bubble{
+    background:var(--signal);
+    border-color:var(--signal);
+    color:var(--paper);
+    font-weight:700;
+    transform:translateY(-2px);
+    box-shadow:0 6px 16px rgba(255,90,31,0.25);
+  }
+  .flow-connector{
+    display:flex;
+    align-items:center;
+    color:var(--rule-dark);
+    font-size:14px;
+    padding:0 2px;
+  }
+  .flow-readout{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--slate);
+    min-height:20px;
+    padding-top:6px;
+    border-top:1px dashed var(--rule);
+  }
+  .flow-readout b{color:var(--signal);}
+
+  /* ---------- Step 2: bottleneck cards ---------- */
+  .bottleneck-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+    margin-bottom:28px;
+  }
+  @media(max-width:560px){ .bottleneck-grid{grid-template-columns:1fr;} }
+  .bn-card{
+    border:1.5px solid var(--rule);
+    background:var(--paper-raised);
+    border-radius:10px;
+    padding:18px 18px 16px;
+    cursor:pointer;
+    transition:all 0.18s ease;
+  }
+  .bn-card:hover{border-color:var(--ink);}
+  .bn-card.selected{
+    border-color:var(--signal);
+    background:var(--signal-dim);
+  }
+  .bn-card-title{
+    font-weight:700;
+    font-size:15px;
+    margin-bottom:6px;
+  }
+  .bn-card-quote{
+    font-size:13.5px;
+    color:var(--slate);
+    font-style:italic;
+    line-height:1.5;
+  }
+  .bn-card.selected .bn-card-quote{color:var(--ink);}
+
+  textarea.why-field{
+    width:100%;
+    margin-top:8px;
+    border:1.5px solid var(--rule);
+    background:var(--paper-raised);
+    border-radius:8px;
+    padding:14px;
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    color:var(--ink);
+    resize:vertical;
+    min-height:84px;
+    line-height:1.5;
+    transition:border-color 0.15s ease;
+  }
+  textarea.why-field:focus{
+    outline:none;
+    border-color:var(--ink);
+  }
+  textarea.why-field::placeholder{color:#9b9d97;}
+  .field-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--slate);
+    margin:24px 0 8px;
+    display:block;
+  }
+
+  /* ---------- Step 3: rating groups ---------- */
+  .rate-group{
+    margin-bottom:40px;
+    border:1px solid var(--rule);
+    border-radius:12px;
+    background:var(--paper-raised);
+    overflow:hidden;
+  }
+  .rate-group-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:16px 20px;
+    border-bottom:1px solid var(--rule);
+  }
+  .rate-group-name{
+    font-weight:700;
+    font-size:15.5px;
+  }
+  .rate-group-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--slate);
+  }
+  .rate-group-score b{color:var(--ink);}
+  .rate-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:14px 20px;
+    border-bottom:1px solid var(--rule);
+  }
+  .rate-row:last-child{border-bottom:none;}
+  .rate-statement{
+    font-size:14px;
+    line-height:1.45;
+    flex:1;
+  }
+  .rate-buttons{
+    display:flex;
+    gap:5px;
+    flex-shrink:0;
+  }
+  .rate-btn{
+    width:30px; height:30px;
+    border-radius:50%;
+    border:1.5px solid var(--rule-dark);
+    background:var(--paper-raised);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    font-weight:700;
+    color:var(--ink);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all 0.15s ease;
+    padding:0;
+  }
+  .rate-btn:hover{border-color:var(--ink); transform:scale(1.08);}
+  .rate-btn.active{
+    background:var(--ink);
+    border-color:var(--ink);
+    color:var(--paper);
+  }
+
+  .total-band{
+    margin-top:8px;
+    padding:24px 24px;
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .total-band-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:#A8ABA4;
+  }
+  .total-band-score{
+    font-family:'JetBrains Mono',monospace;
+    font-size:32px;
+    font-weight:700;
+  }
+  .total-band-score span{font-size:16px; color:#A8ABA4; font-weight:400;}
+  .total-band-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--signal);
+    text-align:right;
+    max-width:220px;
+    line-height:1.4;
+  }
+
+  /* ---------- Step 4 & Future state: canvas tables ---------- */
+  .canvas-table{
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:8px;
+  }
+  .canvas-table th{
+    text-align:left;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--slate);
+    font-weight:600;
+    padding:0 0 10px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .canvas-table td{
+    vertical-align:top;
+    padding:14px 0;
+    border-bottom:1px solid var(--rule);
+  }
+  .canvas-table td.row-label{
+    width:130px;
+    font-weight:700;
+    font-size:14px;
+    padding-right:16px;
+  }
+  .canvas-table td.row-input{
+    padding-left:18px;
+    border-left:1px dashed var(--rule);
+  }
+  .canvas-input{
+    width:100%;
+    border:none;
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    padding:6px 0;
+    line-height:1.5;
+    resize:none;
+    overflow:hidden;
+    min-height:24px;
+  }
+  .canvas-input:focus{outline:none;}
+  .canvas-input::placeholder{color:#B5B7B0;}
+
+  .canvas-divider{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin:48px 0 28px;
+  }
+  .canvas-divider-arrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:20px;
+    color:var(--signal);
+  }
+  .canvas-divider-text{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--slate);
+  }
+  .canvas-divider-line{
+    flex:1;
+    height:1px;
+    background:var(--rule);
+  }
+
+  /* ---------- Step 5: SSAP grid ---------- */
+  .ssap-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  @media(max-width:560px){ .ssap-grid{grid-template-columns:1fr;} }
+  .ssap-card{
+    border:1.5px solid var(--rule);
+    border-radius:10px;
+    padding:18px;
+    background:var(--paper-raised);
+  }
+  .ssap-card.stop{border-top:3px solid #B23A2E;}
+  .ssap-card.start{border-top:3px solid #2E7D4F;}
+  .ssap-card.automate{border-top:3px solid #2E5FB2;}
+  .ssap-card.protect{border-top:3px solid #8A5FB2;}
+  .ssap-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--slate);
+    margin-bottom:8px;
+  }
+  .ssap-card textarea{
+    width:100%;
+    border:none;
+    background:transparent;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    line-height:1.5;
+    color:var(--ink);
+    resize:vertical;
+    min-height:64px;
+  }
+  .ssap-card textarea:focus{outline:none;}
+  .ssap-card textarea::placeholder{color:#B5B7B0;}
+
+  /* ---------- final question ---------- */
+  .final-q{
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:14px;
+    padding:40px 32px;
+    margin-top:8px;
+  }
+  .final-q .step-label{color:#A8ABA4;}
+  .final-q-title{
+    font-family:'Fraunces',serif;
+    font-size:clamp(20px,3vw,26px);
+    font-weight:500;
+    line-height:1.35;
+    margin:10px 0 24px;
+  }
+  .final-q textarea{
+    width:100%;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.18);
+    border-radius:8px;
+    padding:14px;
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    font-size:14.5px;
+    min-height:80px;
+    resize:vertical;
+    line-height:1.5;
+  }
+  .final-q textarea:focus{outline:none; border-color:var(--signal);}
+  .final-q textarea::placeholder{color:#7C7F78;}
+
+  /* ---------- diagnosis report ---------- */
+  .diagnosis{
+    padding:80px 0 0;
+  }
+  .diagnosis-eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--signal);
+    margin-bottom:14px;
+  }
+  .diagnosis-title{
+    font-size:clamp(28px,4.5vw,40px);
+    font-weight:600;
+    margin:0 0 6px;
+    letter-spacing:-0.01em;
+  }
+  .diagnosis-sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--slate);
+    margin-bottom:36px;
+  }
+  .diagnosis-panel{
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:16px;
+    padding:36px 32px;
+    margin-bottom:24px;
+  }
+  .diagnosis-panel .score-row{
+    display:flex;
+    align-items:baseline;
+    gap:18px;
+    margin-bottom:18px;
+    flex-wrap:wrap;
+  }
+  .diagnosis-panel .score-big{
+    font-family:'JetBrains Mono',monospace;
+    font-size:48px;
+    font-weight:700;
+    color:var(--signal);
+  }
+  .diagnosis-panel .score-big span{
+    font-size:20px;
+    color:#A8ABA4;
+    font-weight:400;
+  }
+  .diagnosis-archetype{
+    font-family:'Fraunces',serif;
+    font-size:22px;
+    font-weight:600;
+  }
+  .diagnosis-panel p{
+    font-size:14.5px;
+    line-height:1.7;
+    color:#D7D6D0;
+    margin:0;
+  }
+  .diagnosis-bars{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    margin-top:24px;
+  }
+  .bar-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  .bar-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:#A8ABA4;
+    width:108px;
+    flex-shrink:0;
+  }
+  .bar-track{
+    flex:1;
+    height:6px;
+    background:rgba(255,255,255,0.12);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .bar-fill{
+    height:100%;
+    background:var(--signal);
+    border-radius:3px;
+    transition:width 0.6s ease;
+  }
+  .bar-val{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--paper);
+    width:38px;
+    text-align:right;
+    flex-shrink:0;
+  }
+
+  .diagnosis-note{
+    border:1px solid var(--rule);
+    border-radius:12px;
+    padding:22px 24px;
+    margin-bottom:24px;
+    background:var(--paper-raised);
+  }
+  .diagnosis-note h4{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--slate);
+    margin:0 0 10px;
+  }
+  .diagnosis-note p{
+    font-size:14.5px;
+    line-height:1.65;
+    margin:0;
+    color:var(--ink);
+  }
+
+  .report-actions{
+    display:flex;
+    gap:10px;
+    margin:32px 0 100px;
+    flex-wrap:wrap;
+  }
+  .btn{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    padding:13px 22px;
+    border-radius:8px;
+    border:1.5px solid var(--ink);
+    cursor:pointer;
+    transition:all 0.15s ease;
+  }
+  .btn-primary{
+    background:var(--ink);
+    color:var(--paper);
+  }
+  .btn-primary:hover{background:var(--signal); border-color:var(--signal);}
+  .btn-ghost{
+    background:transparent;
+    color:var(--ink);
+  }
+  .btn-ghost:hover{background:var(--ink); color:var(--paper);}
+
+  @media print{
+    .vitals, .report-actions, .restore-banner{display:none;}
+    body{background:#fff;}
+  }
+
+  .restore-banner{
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%) translateY(0);
+    z-index:60;
+    background:var(--ink);
+    color:var(--paper);
+    border-radius:10px;
+    padding:14px 18px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    box-shadow:0 12px 32px rgba(0,0,0,0.25);
+    font-size:13px;
+    max-width:calc(100vw - 40px);
+    transition:opacity 0.3s ease, transform 0.3s ease;
+  }
+  .restore-banner.hidden{
+    opacity:0;
+    pointer-events:none;
+    transform:translateX(-50%) translateY(12px);
+  }
+  .restore-banner span{color:#D7D6D0;}
+  .restore-banner button{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    background:var(--signal);
+    color:var(--ink);
+    border:none;
+    border-radius:6px;
+    padding:8px 14px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .restore-banner button.dismiss{
+    background:transparent;
+    color:var(--paper);
+    border:1px solid rgba(255,255,255,0.3);
+  }
+</style>
+</head>
+<body>
+
+<div class="vitals">
+  <div class="vitals-inner">
+    <div class="vitals-mark mono">AI&#8211;NATIVE DX</div>
+    <div class="vitals-track"><div class="vitals-fill" id="vitalsFill"></div></div>
+    <div class="vitals-score" id="vitalsScore">0<span style="color:#9b9d97">/100</span> &nbsp;&middot;&nbsp; <span id="vitalsPct">0%</span> complete</div>
+    <div class="vitals-save mono" id="vitalsSave"><span class="vitals-save-dot" id="saveDot"></span><span id="saveLabel">Not saved</span></div>
+  </div>
+</div>
+
+<div class="restore-banner hidden" id="restoreBanner">
+  <span id="restoreText">Found a saved session.</span>
+  <button id="restoreBtn">Restore</button>
+  <button class="dismiss" id="dismissBtn">Start fresh</button>
+</div>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-eyebrow mono">Diagnostic &middot; 5 steps &middot; ~8 min</div>
+    <h1 class="hero-title">The AI&#8211;Native<br>Team <em>Diagnostic</em></h1>
+    <p class="hero-sub">Most teams are bolting AI onto a traditional operating model. Very few are redesigning the model itself. Work through five steps to find out which one you're doing &mdash; and what's actually slowing you down.</p>
+    <div class="hero-meta">
+      <span>STEP <b>01&#8211;05</b></span>
+      <span>OUTPUT <b>Readiness score + diagnosis</b></span>
+      <span>SAVES <b>This browser only, for now</b></span>
+    </div>
+    <div class="hero-name">
+      <label class="mono" for="userName">Your name</label>
+      <input type="text" id="userName" placeholder="So your saved session has a label">
+    </div>
+    <div class="hero-name-hint">Answers save automatically to this device as you go. Team-wide shared results are coming soon &mdash; for now, each person's progress stays local to their own browser.</div>
+  </header>
+
+  <!-- STEP 1: WORKFLOW MAP -->
+  <section class="step" id="step1">
+    <div class="step-head">
+      <span class="step-num mono">01</span>
+      <span class="step-label">Map your workflow</span>
+    </div>
+    <h2 class="step-title">Where does the team's time actually go?</h2>
+    <p class="step-intro">Tap every stage your team spends real time in, between an idea showing up and it shipping. The pattern that emerges is your current operating model &mdash; whether anyone designed it that way or not.</p>
+
+    <div class="flow-rail" id="flowRail">
+      <div class="flow-node endpoint"><div class="flow-bubble">IDEA</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node" data-stage="Discovery"><div class="flow-bubble">DISCOVERY</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node" data-stage="Prioritization"><div class="flow-bubble">PRIORITI&#8203;ZATION</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node" data-stage="Requirements"><div class="flow-bubble">REQUIRE&#8203;MENTS</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node" data-stage="Design"><div class="flow-bubble">DESIGN</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node" data-stage="Engineering"><div class="flow-bubble">ENGINEER&#8203;ING</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node" data-stage="QA"><div class="flow-bubble">QA</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node endpoint"><div class="flow-bubble">LAUNCH</div></div>
+      <div class="flow-connector">&rarr;</div>
+      <div class="flow-node" data-stage="Learning"><div class="flow-bubble">LEARN&#8203;ING</div></div>
+    </div>
+    <div class="flow-readout mono" id="flowReadout">Tap the stages where your team gets stuck &mdash; select as many as apply.</div>
+  </section>
+
+  <!-- STEP 2: BOTTLENECK -->
+  <section class="step" id="step2">
+    <div class="step-head">
+      <span class="step-num mono">02</span>
+      <span class="step-label">Identify the bottleneck</span>
+    </div>
+    <h2 class="step-title">Which sentence sounds like your team?</h2>
+    <p class="step-intro">Bottlenecks usually sound like one of these four complaints. Pick the one you hear most often &mdash; in standups, in retros, in your own head at 11pm.</p>
+
+    <div class="bottleneck-grid" id="bottleneckGrid">
+      <div class="bn-card" data-bn="Discovery">
+        <div class="bn-card-title">Discovery</div>
+        <div class="bn-card-quote">&ldquo;We don't know what to build.&rdquo;</div>
+      </div>
+      <div class="bn-card" data-bn="Validation">
+        <div class="bn-card-title">Validation</div>
+        <div class="bn-card-quote">&ldquo;We don't know what works.&rdquo;</div>
+      </div>
+      <div class="bn-card" data-bn="Context">
+        <div class="bn-card-title">Context</div>
+        <div class="bn-card-quote">&ldquo;We don't know what we know.&rdquo;</div>
+      </div>
+      <div class="bn-card" data-bn="Execution">
+        <div class="bn-card-title">Execution</div>
+        <div class="bn-card-quote">&ldquo;We know what to do but can't move.&rdquo;</div>
+      </div>
+    </div>
+
+    <label class="field-label">Why &mdash; what's the evidence?</label>
+    <textarea class="why-field" id="bnWhy" placeholder="e.g. Every roadmap review turns into a debate about whether the idea is even right, before we've shipped anything to test it..."></textarea>
+  </section>
+
+  <!-- STEP 3: READINESS -->
+  <section class="step" id="step3">
+    <div class="step-head">
+      <span class="step-num mono">03</span>
+      <span class="step-label">AI&#8211;native readiness</span>
+    </div>
+    <h2 class="step-title">Rate each statement, 1&#8211;5</h2>
+    <p class="step-intro">1 = never true of us. 5 = this is just how we operate. Be honest &mdash; the score only means something if the inputs do.</p>
+
+    <div id="ratingGroups"></div>
+
+    <div class="total-band">
+      <div>
+        <div class="total-band-label">TOTAL READINESS SCORE</div>
+        <div class="total-band-score" id="totalScore">0 <span>/ 100</span></div>
+      </div>
+      <div class="total-band-tag" id="totalTag">Rate the statements above to see where you land.</div>
+    </div>
+  </section>
+
+  <!-- STEP 4: OPERATING MODEL CANVAS -->
+  <section class="step" id="step4">
+    <div class="step-head">
+      <span class="step-num mono">04</span>
+      <span class="step-label">Operating model canvas</span>
+    </div>
+    <h2 class="step-title">Current state &rarr; future state</h2>
+    <p class="step-intro">Five components, two snapshots. Fill in how the team actually runs today, then sketch what you want to be true instead.</p>
+
+    <table class="canvas-table">
+      <tr><th>Component</th><th>Current state</th></tr>
+      <tr><td class="row-label">Inputs</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="Where ideas, requests, and signals come from" data-key="cur-inputs"></textarea></td></tr>
+      <tr><td class="row-label">Decisions</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="Who decides what gets built, and how" data-key="cur-decisions"></textarea></td></tr>
+      <tr><td class="row-label">Execution</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="How work actually gets done" data-key="cur-execution"></textarea></td></tr>
+      <tr><td class="row-label">Validation</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="How you know if it worked" data-key="cur-validation"></textarea></td></tr>
+      <tr><td class="row-label">Learning</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="How learning gets captured and reused" data-key="cur-learning"></textarea></td></tr>
+    </table>
+
+    <div class="canvas-divider">
+      <div class="canvas-divider-line"></div>
+      <span class="canvas-divider-arrow">&darr;</span>
+      <span class="canvas-divider-text mono">Future state</span>
+      <div class="canvas-divider-line"></div>
+    </div>
+
+    <table class="canvas-table">
+      <tr><th>Component</th><th>Future state</th></tr>
+      <tr><td class="row-label">Inputs</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="What you want to be true instead" data-key="fut-inputs"></textarea></td></tr>
+      <tr><td class="row-label">Decisions</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="What you want to be true instead" data-key="fut-decisions"></textarea></td></tr>
+      <tr><td class="row-label">Execution</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="What you want to be true instead" data-key="fut-execution"></textarea></td></tr>
+      <tr><td class="row-label">Validation</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="What you want to be true instead" data-key="fut-validation"></textarea></td></tr>
+      <tr><td class="row-label">Learning</td><td class="row-input"><textarea class="canvas-input" rows="1" placeholder="What you want to be true instead" data-key="fut-learning"></textarea></td></tr>
+    </table>
+  </section>
+
+  <!-- STEP 5: 90-DAY PLAN -->
+  <section class="step" id="step5">
+    <div class="step-head">
+      <span class="step-num mono">05</span>
+      <span class="step-label">90&#8211;day plan</span>
+    </div>
+    <h2 class="step-title">Stop. Start. Automate. Protect.</h2>
+    <p class="step-intro">The four moves that turn a diagnosis into a plan. One concrete commitment per box beats four vague ones.</p>
+
+    <div class="ssap-grid">
+      <div class="ssap-card stop">
+        <div class="ssap-label mono">Stop</div>
+        <textarea placeholder="What are you doing today that no longer earns its keep?" data-key="ssap-stop"></textarea>
+      </div>
+      <div class="ssap-card start">
+        <div class="ssap-label mono">Start</div>
+        <textarea placeholder="What's the smallest new habit that addresses the bottleneck?" data-key="ssap-start"></textarea>
+      </div>
+      <div class="ssap-card automate">
+        <div class="ssap-label mono">Automate</div>
+        <textarea placeholder="What repetitive work should AI just be doing already?" data-key="ssap-automate"></textarea>
+      </div>
+      <div class="ssap-card protect">
+        <div class="ssap-label mono">Protect</div>
+        <textarea placeholder="What must not get automated or rushed, even under pressure?" data-key="ssap-protect"></textarea>
+      </div>
+    </div>
+
+    <label class="field-label" style="margin-top:36px;">Final question</label>
+    <div class="final-q">
+      <div class="final-q-title">If execution became 10x faster tomorrow &mdash; what would become your bottleneck?</div>
+      <textarea id="finalQ" placeholder="Be specific. This is usually the real answer to Step 2."></textarea>
+    </div>
+  </section>
+
+  <!-- DIAGNOSIS REPORT -->
+  <section class="diagnosis" id="diagnosisSection">
+    <div class="diagnosis-eyebrow mono">Generated diagnosis</div>
+    <h2 class="diagnosis-title">Your readout</h2>
+    <div class="diagnosis-sub mono" id="diagnosisDate"></div>
+
+    <div class="diagnosis-panel">
+      <div class="score-row">
+        <div class="score-big" id="reportScore">0<span>/100</span></div>
+        <div class="diagnosis-archetype" id="reportArchetype">&mdash;</div>
+      </div>
+      <p id="reportSummary">Complete Step 3 to generate your archetype and summary.</p>
+      <div class="diagnosis-bars" id="reportBars"></div>
+    </div>
+
+    <div class="diagnosis-note">
+      <h4>Primary bottleneck</h4>
+      <p id="reportBottleneck">Not yet identified &mdash; select one in Step 2.</p>
+    </div>
+
+    <div class="diagnosis-note">
+      <h4>Where time is going</h4>
+      <p id="reportFlow">Not yet mapped &mdash; tap stages in Step 1.</p>
+    </div>
+
+    <div class="report-actions">
+      <button class="btn btn-primary" onclick="window.print()">Save as PDF</button>
+      <button class="btn btn-ghost" id="resetBtn">Start over</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+
+  // ---------- STORAGE ADAPTER ----------
+  // Single seam for persistence. Today: localStorage, scoped to this browser.
+  // Later: swap the three methods below for calls to a real backend
+  // (e.g. fetch('/api/sessions/:id')) without touching anything else in this file —
+  // every call site only ever talks to Store.save/load/clear.
+  const STORAGE_KEY = 'ai-native-diagnostic:v1';
+
+  const Store = {
+    save(data){
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        return true;
+      }catch(e){
+        console.warn('Save failed (storage unavailable or full):', e);
+        return false;
+      }
+    },
+    load(){
+      try{
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : null;
+      }catch(e){
+        console.warn('Load failed (corrupt or unavailable storage):', e);
+        return null;
+      }
+    },
+    clear(){
+      try{
+        localStorage.removeItem(STORAGE_KEY);
+        return true;
+      }catch(e){
+        return false;
+      }
+    },
+    available(){
+      try{
+        const t = '__storage_test__';
+        localStorage.setItem(t, t);
+        localStorage.removeItem(t);
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+  };
+
+  // ---------- STATE ----------
+  const state = {
+    userName: '',
+    flowStages: new Set(),
+    bottleneck: null,
+    bnWhy: '',
+    ratings: {}, // key: "groupIdx-itemIdx" -> 1-5
+    canvas: {},
+    ssap: {},
+    finalQ: ''
+  };
+
+  const RATING_GROUPS = [
+    { name:'Workflow', items:[
+      'We prototype before writing specs.',
+      'Validation happens before implementation.',
+      'Teams learn faster than they build.',
+      'Experiments are easy to run.'
+    ]},
+    { name:'Team Design', items:[
+      'PMs can prototype.',
+      'Designers can validate.',
+      'Engineers participate in product decisions.',
+      'Individuals operate across functions.'
+    ]},
+    { name:'Context', items:[
+      'Decisions are documented.',
+      'Research is reusable.',
+      'Knowledge is searchable.',
+      'AI has access to company context.'
+    ]},
+    { name:'AI Integration', items:[
+      'AI is embedded into workflows.',
+      'Prompts are shared.',
+      'Workflows are reusable.',
+      'AI removes repetitive work.'
+    ]},
+    { name:'Throughput', items:[
+      'We can test ideas quickly.',
+      'Handoffs rarely block progress.',
+      'Learning cycles are short.',
+      'Speed is limited by insight rather than execution.'
+    ]}
+  ];
+
+  const BOTTLENECK_COPY = {
+    Discovery: "Your team is fluent in shipping but unsure what's worth shipping. The fix is upstream: cheaper, faster ways to test ideas before they become commitments.",
+    Validation: "You can build almost anything &mdash; you just don't reliably know if it worked. The fix is closing the loop between launch and evidence, faster than your next planning cycle.",
+    Context: "Knowledge exists, but it's trapped in people's heads or last quarter's Slack thread. The fix is making what the team already knows actually retrievable &mdash; by humans and by AI.",
+    Execution: "Direction isn't the problem &mdash; throughput is. The fix is removing handoffs and repetitive work between a decision and a shipped result."
+  };
+
+  // ---------- IDENTITY ----------
+  const userNameInput = document.getElementById('userName');
+  userNameInput.addEventListener('input', ()=>{
+    state.userName = userNameInput.value;
+    updateVitals();
+  });
+
+  // ---------- STEP 1: FLOW RAIL ----------
+  const flowRail = document.getElementById('flowRail');
+  const flowReadout = document.getElementById('flowReadout');
+
+  flowRail.querySelectorAll('.flow-node:not(.endpoint)').forEach(node=>{
+    node.addEventListener('click', ()=>{
+      const stage = node.dataset.stage;
+      if(state.flowStages.has(stage)){
+        state.flowStages.delete(stage);
+        node.classList.remove('selected');
+      } else {
+        state.flowStages.add(stage);
+        node.classList.add('selected');
+      }
+      updateFlowReadout();
+      updateVitals();
+      updateReport();
+    });
+  });
+
+  function updateFlowReadout(){
+    if(state.flowStages.size === 0){
+      flowReadout.innerHTML = 'Tap the stages where your team gets stuck &mdash; select as many as apply.';
+      return;
+    }
+    const list = Array.from(state.flowStages).join(', ');
+    flowReadout.innerHTML = `Time concentrates in: <b>${list}</b>`;
+  }
+
+  // ---------- STEP 2: BOTTLENECK CARDS ----------
+  const bnCards = document.querySelectorAll('.bn-card');
+  bnCards.forEach(card=>{
+    card.addEventListener('click', ()=>{
+      bnCards.forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      state.bottleneck = card.dataset.bn;
+      updateVitals();
+      updateReport();
+    });
+  });
+  const bnWhy = document.getElementById('bnWhy');
+  bnWhy.addEventListener('input', ()=>{ state.bnWhy = bnWhy.value; updateVitals(); });
+
+  // ---------- STEP 3: RATING GROUPS ----------
+  const ratingGroupsEl = document.getElementById('ratingGroups');
+
+  RATING_GROUPS.forEach((group, gi)=>{
+    const groupEl = document.createElement('div');
+    groupEl.className = 'rate-group';
+
+    const head = document.createElement('div');
+    head.className = 'rate-group-head';
+    head.innerHTML = `<div class="rate-group-name">${group.name}</div><div class="rate-group-score mono" id="gscore-${gi}"><b>0</b> / 20</div>`;
+    groupEl.appendChild(head);
+
+    group.items.forEach((statement, ii)=>{
+      const row = document.createElement('div');
+      row.className = 'rate-row';
+      const key = `${gi}-${ii}`;
+
+      const stmt = document.createElement('div');
+      stmt.className = 'rate-statement';
+      stmt.textContent = statement;
+      row.appendChild(stmt);
+
+      const btnsWrap = document.createElement('div');
+      btnsWrap.className = 'rate-buttons';
+      for(let v=1; v<=5; v++){
+        const btn = document.createElement('button');
+        btn.className = 'rate-btn';
+        btn.textContent = v;
+        btn.addEventListener('click', ()=>{
+          state.ratings[key] = v;
+          btnsWrap.querySelectorAll('.rate-btn').forEach((b,idx)=>{
+            b.classList.toggle('active', idx < v);
+          });
+          updateGroupScore(gi);
+          updateTotalScore();
+          updateVitals();
+          updateReport();
+        });
+        btnsWrap.appendChild(btn);
+      }
+      row.appendChild(btnsWrap);
+      groupEl.appendChild(row);
+    });
+
+    ratingGroupsEl.appendChild(groupEl);
+  });
+
+  function updateGroupScore(gi){
+    let sum = 0;
+    RATING_GROUPS[gi].items.forEach((_, ii)=>{
+      sum += state.ratings[`${gi}-${ii}`] || 0;
+    });
+    document.getElementById(`gscore-${gi}`).innerHTML = `<b>${sum}</b> / 20`;
+    return sum;
+  }
+
+  function getGroupScore(gi){
+    let sum = 0;
+    RATING_GROUPS[gi].items.forEach((_, ii)=>{
+      sum += state.ratings[`${gi}-${ii}`] || 0;
+    });
+    return sum;
+  }
+
+  const totalScoreEl = document.getElementById('totalScore');
+  const totalTagEl = document.getElementById('totalTag');
+
+  function getTotalScore(){
+    let total = 0;
+    RATING_GROUPS.forEach((_, gi)=> total += getGroupScore(gi));
+    return total;
+  }
+
+  function archetypeFor(score){
+    if(score === 0) return { name:'&mdash;', desc:'Rate the statements above to see where you land.' };
+    if(score < 30) return { name:'Legacy Operator', desc:'AI sits on top of an unchanged process. The model itself needs the redesign, not another tool.' };
+    if(score < 50) return { name:'Early Adopter', desc:'Pockets of AI-native behavior exist, but they\'re individual habits, not team infrastructure yet.' };
+    if(score < 70) return { name:'Transitional Team', desc:'The shift is underway. Some functions have crossed over; others are still running the old playbook.' };
+    if(score < 85) return { name:'AI-Native Team', desc:'AI is load-bearing in how you work, not bolted on. The gaps left are specific, not structural.' };
+    return { name:'Fully Reconfigured', desc:'The operating model was rebuilt around AI from the ground up. Insight, not execution, is now your limit.' };
+  }
+
+  function updateTotalScore(){
+    const total = getTotalScore();
+    totalScoreEl.innerHTML = `${total} <span>/ 100</span>`;
+    const arch = archetypeFor(total);
+    totalTagEl.innerHTML = total === 0 ? arch.desc : `<b style="color:var(--signal)">${arch.name}</b> &mdash; ${arch.desc}`;
+  }
+
+  // ---------- STEP 4: CANVAS ----------
+  document.querySelectorAll('.canvas-input').forEach(ta=>{
+    ta.addEventListener('input', ()=>{
+      state.canvas[ta.dataset.key] = ta.value;
+      autoGrow(ta);
+      updateVitals();
+    });
+  });
+
+  function autoGrow(el){
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight) + 'px';
+  }
+
+  // ---------- STEP 5: SSAP + FINAL ----------
+  document.querySelectorAll('.ssap-card textarea').forEach(ta=>{
+    ta.addEventListener('input', ()=>{
+      state.ssap[ta.dataset.key] = ta.value;
+      updateVitals();
+    });
+  });
+  const finalQ = document.getElementById('finalQ');
+  finalQ.addEventListener('input', ()=>{ state.finalQ = finalQ.value; updateVitals(); });
+
+  // ---------- VITALS (progress) ----------
+  const vitalsFill = document.getElementById('vitalsFill');
+  const vitalsScore = document.getElementById('vitalsScore');
+  const vitalsPct = document.getElementById('vitalsPct');
+
+  function computeCompletion(){
+    let total = 0, done = 0;
+
+    total += 1; done += state.flowStages.size > 0 ? 1 : 0;
+    total += 1; done += state.bottleneck ? 1 : 0;
+    total += 1; done += state.bnWhy.trim().length > 0 ? 1 : 0;
+    total += 20; // ratings
+    Object.values(state.ratings).forEach(v=>{ if(v) done += 1; });
+    total += 10; // canvas fields
+    Object.values(state.canvas).forEach(v=>{ if(v && v.trim()) done += 1; });
+    total += 4; // ssap
+    Object.values(state.ssap).forEach(v=>{ if(v && v.trim()) done += 1; });
+    total += 1; done += state.finalQ.trim().length > 0 ? 1 : 0;
+
+    return Math.round((done/total)*100);
+  }
+
+  function updateVitals(){
+    const score = getTotalScore();
+    const pct = computeCompletion();
+    vitalsFill.style.width = pct + '%';
+    vitalsScore.innerHTML = `${score}<span style="color:#9b9d97">/100</span> &nbsp;&middot;&nbsp; ${pct}% complete`;
+    scheduleSave();
+  }
+
+  // ---------- AUTO-SAVE ----------
+  const saveDot = document.getElementById('saveDot');
+  const saveLabel = document.getElementById('saveLabel');
+  let saveTimer = null;
+
+  function serializeState(){
+    return {
+      userName: state.userName,
+      flowStages: Array.from(state.flowStages),
+      bottleneck: state.bottleneck,
+      bnWhy: state.bnWhy,
+      ratings: state.ratings,
+      canvas: state.canvas,
+      ssap: state.ssap,
+      finalQ: state.finalQ,
+      savedAt: new Date().toISOString()
+    };
+  }
+
+  function scheduleSave(){
+    if(!storageOK) return;
+    saveDot.className = 'vitals-save-dot saving';
+    saveLabel.textContent = 'Saving…';
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(()=>{
+      const ok = Store.save(serializeState());
+      if(ok){
+        saveDot.className = 'vitals-save-dot saved';
+        saveLabel.textContent = 'Saved to this browser';
+      } else {
+        saveDot.className = 'vitals-save-dot';
+        saveLabel.textContent = 'Save failed';
+      }
+    }, 500);
+  }
+
+  // ---------- DIAGNOSIS REPORT ----------
+  const reportScore = document.getElementById('reportScore');
+  const reportArchetype = document.getElementById('reportArchetype');
+  const reportSummary = document.getElementById('reportSummary');
+  const reportBars = document.getElementById('reportBars');
+  const reportBottleneck = document.getElementById('reportBottleneck');
+  const reportFlow = document.getElementById('reportFlow');
+
+  function updateReport(){
+    const total = getTotalScore();
+    const arch = archetypeFor(total);
+    reportScore.innerHTML = `${total}<span>/100</span>`;
+    reportArchetype.textContent = arch.name === '&mdash;' ? '—' : arch.name;
+    reportSummary.innerHTML = total === 0
+      ? 'Complete Step 3 to generate your archetype and summary.'
+      : arch.desc;
+
+
+    reportBars.innerHTML = '';
+    RATING_GROUPS.forEach((group, gi)=>{
+      const sum = getGroupScore(gi);
+      const pct = (sum/20)*100;
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-label mono">${group.name}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-val mono">${sum}/20</div>
+      `;
+      reportBars.appendChild(row);
+    });
+
+    if(state.bottleneck){
+      reportBottleneck.innerHTML = `<b>${state.bottleneck}.</b> ${BOTTLENECK_COPY[state.bottleneck]}` + (state.bnWhy.trim() ? `<br><br><span style="color:var(--slate)">Your note: &ldquo;${escapeHtml(state.bnWhy.trim())}&rdquo;</span>` : '');
+    } else {
+      reportBottleneck.textContent = 'Not yet identified — select one in Step 2.';
+    }
+
+    if(state.flowStages.size > 0){
+      reportFlow.innerHTML = `Time concentrates in <b>${Array.from(state.flowStages).join(', ')}</b>. Cross-reference this against your bottleneck above — if they don't line up, that gap is worth a closer look.`;
+    } else {
+      reportFlow.textContent = 'Not yet mapped — tap stages in Step 1.';
+    }
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ---------- DATE ----------
+  document.getElementById('diagnosisDate').textContent = 'Generated ' + new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+
+  // ---------- RESET ----------
+  document.getElementById('resetBtn').addEventListener('click', ()=>{
+    if(confirm('Clear all answers and start over? This deletes your saved session on this browser too.')){
+      Store.clear();
+      window.scrollTo({top:0, behavior:'smooth'});
+      setTimeout(()=> location.reload(), 400);
+    }
+  });
+
+  // ---------- RESTORE FROM STORAGE ----------
+  const storageOK = Store.available();
+  const restoreBanner = document.getElementById('restoreBanner');
+  const restoreText = document.getElementById('restoreText');
+  const restoreBtn = document.getElementById('restoreBtn');
+  const dismissBtn = document.getElementById('dismissBtn');
+
+  if(!storageOK){
+    saveLabel.textContent = 'Storage unavailable';
+    saveDot.className = 'vitals-save-dot';
+  }
+
+  function applySavedData(saved){
+    state.userName = saved.userName || '';
+    state.flowStages = new Set(saved.flowStages || []);
+    state.bottleneck = saved.bottleneck || null;
+    state.bnWhy = saved.bnWhy || '';
+    state.ratings = saved.ratings || {};
+    state.canvas = saved.canvas || {};
+    state.ssap = saved.ssap || {};
+    state.finalQ = saved.finalQ || '';
+
+    // repopulate DOM
+    userNameInput.value = state.userName;
+    bnWhy.value = state.bnWhy;
+    finalQ.value = state.finalQ;
+
+    flowRail.querySelectorAll('.flow-node:not(.endpoint)').forEach(node=>{
+      node.classList.toggle('selected', state.flowStages.has(node.dataset.stage));
+    });
+    updateFlowReadout();
+
+    bnCards.forEach(card=>{
+      card.classList.toggle('selected', card.dataset.bn === state.bottleneck);
+    });
+
+    RATING_GROUPS.forEach((group, gi)=>{
+      group.items.forEach((_, ii)=>{
+        const key = `${gi}-${ii}`;
+        const v = state.ratings[key];
+        if(v){
+          const row = ratingGroupsEl.querySelectorAll('.rate-group')[gi].querySelectorAll('.rate-row')[ii];
+          row.querySelectorAll('.rate-btn').forEach((b, idx)=> b.classList.toggle('active', idx < v));
+        }
+      });
+      updateGroupScore(gi);
+    });
+
+    document.querySelectorAll('.canvas-input').forEach(ta=>{
+      const v = state.canvas[ta.dataset.key];
+      if(v){ ta.value = v; autoGrow(ta); }
+    });
+
+    document.querySelectorAll('.ssap-card textarea').forEach(ta=>{
+      const v = state.ssap[ta.dataset.key];
+      if(v){ ta.value = v; }
+    });
+
+    updateTotalScore();
+    updateVitals();
+    updateReport();
+  }
+
+  function hideRestoreBanner(){
+    restoreBanner.classList.add('hidden');
+  }
+
+  if(storageOK){
+    const saved = Store.load();
+    const hasContent = saved && (
+      saved.bottleneck || saved.bnWhy || saved.finalQ ||
+      (saved.flowStages && saved.flowStages.length) ||
+      (saved.ratings && Object.keys(saved.ratings).length) ||
+      (saved.canvas && Object.values(saved.canvas).some(v=>v && v.trim())) ||
+      (saved.ssap && Object.values(saved.ssap).some(v=>v && v.trim()))
+    );
+
+    if(hasContent){
+      const who = saved.userName ? saved.userName + '\u2019s' : 'a';
+      const when = saved.savedAt ? new Date(saved.savedAt).toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'}) : 'an earlier visit';
+      restoreText.textContent = `Found ${who} saved session from ${when}.`;
+      restoreBanner.classList.remove('hidden');
+
+      restoreBtn.addEventListener('click', ()=>{
+        applySavedData(saved);
+        hideRestoreBanner();
+      });
+      dismissBtn.addEventListener('click', hideRestoreBanner);
+    }
+  }
+
+  // init
+  updateTotalScore();
+  updateVitals();
+  updateReport();
+  if(storageOK){
+    saveDot.className = 'vitals-save-dot';
+    saveLabel.textContent = 'Not saved yet';
+  }
+
+})();
+</script>
+
+</body>
+</html>

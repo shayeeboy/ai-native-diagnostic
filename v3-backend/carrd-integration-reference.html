@@ -1,0 +1,84 @@
+<!--
+  Reference snippet — NOT a full page.
+
+  This shows how to replace v2's localStorage-based Store object with one
+  that calls the v3 API instead. Drop the resulting <script> into a Carrd
+  "Embed > Code" element alongside the diagnostic's HTML/CSS.
+
+  Swap API_BASE_URL for your real Render URL (or custom domain) once deployed.
+-->
+
+<script>
+  const API_BASE_URL = 'https://ai-native-diagnostic-api.onrender.com'; // ← replace after deploy
+
+  // Same three-method shape as v2's Store — only the implementation changes.
+  // Everything else in the app (event handlers, updateVitals, etc.) calls
+  // these exact same method names, so the rest of v2's code doesn't change.
+  const Store = {
+    currentId: null, // set after first successful save, so later saves UPDATE instead of INSERT
+
+    async save(data) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/sessions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: this.currentId, ...data })
+        });
+        if (!res.ok) throw new Error(`Save failed: ${res.status}`);
+        const saved = await res.json();
+        this.currentId = saved.id;
+        return true;
+      } catch (e) {
+        console.warn('Save failed:', e);
+        return false;
+      }
+    },
+
+    async load() {
+      // v2 used this to restore the CURRENT browser's last session from localStorage.
+      // With a shared backend, "my last session" needs an id to look up —
+      // simplest approach: store just the id (not the answers) in localStorage,
+      // then fetch the real data from the API. This keeps zero sensitive data
+      // sitting in the browser long-term.
+      const savedId = localStorage.getItem('ai-native-diagnostic:session-id');
+      if (!savedId) return null;
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/sessions/${savedId}`);
+        if (!res.ok) return null;
+        this.currentId = savedId;
+        return await res.json();
+      } catch (e) {
+        console.warn('Load failed:', e);
+        return null;
+      }
+    },
+
+    async clear() {
+      if (!this.currentId) return true;
+      try {
+        await fetch(`${API_BASE_URL}/api/sessions/${this.currentId}`, { method: 'DELETE' });
+        localStorage.removeItem('ai-native-diagnostic:session-id');
+        this.currentId = null;
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+
+    available() {
+      return true; // network availability isn't checked synchronously; rely on save()/load() try-catch
+    }
+  };
+
+  // After a successful save, remember the id locally so a reload can resume.
+  // (Hook this into Store.save() in the real integration, right after `this.currentId = saved.id;`)
+  // localStorage.setItem('ai-native-diagnostic:session-id', saved.id);
+
+  // ---------- Team view: list everyone's results ----------
+  // Call this wherever v3 renders the shared leaderboard/comparison view.
+  async function loadTeamResults() {
+    const res = await fetch(`${API_BASE_URL}/api/sessions`);
+    if (!res.ok) throw new Error('Could not load team results.');
+    return res.json(); // array of every saved session, newest first
+  }
+</script>
