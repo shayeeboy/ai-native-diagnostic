@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The AI-Native Team Diagnostic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0E1110; --paper:#F7F5F0; --paper-raised:#FCFBF8;
+    --signal:#FF5A1F; --signal-dim:#FFE4D6; --slate:#6B6E68;
+    --rule:#D8D4C8; --rule-dark:#3a3d3a;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:48px 24px;
+  }
+  ::selection{background:var(--signal); color:var(--paper);}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .wrap{max-width:720px; width:100%;}
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace; font-size:12px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--signal); margin-bottom:18px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .eyebrow::before{content:''; width:8px; height:8px; background:var(--signal); border-radius:50%;}
+  h1{
+    font-family:'Fraunces',serif; font-size:clamp(32px,6vw,52px); line-height:1.05;
+    font-weight:600; margin:0 0 20px; letter-spacing:-0.01em;
+  }
+  h1 em{font-style:italic; font-weight:500; color:var(--slate);}
+  .sub{font-size:17px; line-height:1.6; color:var(--slate); max-width:56ch; margin:0 0 40px;}
+  .cards{display:grid; gap:14px;}
+  a.card{
+    display:block; text-decoration:none; color:inherit;
+    border:1.5px solid var(--rule); background:var(--paper-raised);
+    border-radius:12px; padding:22px 24px; transition:all 0.18s ease;
+  }
+  a.card:hover{border-color:var(--signal); transform:translateY(-2px); box-shadow:0 8px 22px rgba(255,90,31,0.12);}
+  .card-head{display:flex; align-items:baseline; gap:12px; margin-bottom:6px;}
+  .card-tag{
+    font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700;
+    color:var(--signal); text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .card-title{font-weight:700; font-size:16px;}
+  .card-desc{font-size:14px; color:var(--slate); line-height:1.55;}
+  .card-arrow{float:right; color:var(--slate); font-family:'JetBrains Mono',monospace;}
+  footer{
+    margin-top:36px; font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--slate);
+    display:flex; gap:18px; flex-wrap:wrap;
+  }
+  footer a{color:var(--ink); text-decoration:none; border-bottom:1px solid var(--rule-dark);}
+  footer a:hover{color:var(--signal); border-color:var(--signal);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="eyebrow mono">Diagnostic &middot; 3 versions</div>
+    <h1>The AI&#8211;Native<br>Team <em>Diagnostic</em></h1>
+    <p class="sub">An interactive, self-scoring assessment of how AI-native your team's operating model really is. Three versions, each adding one layer of capability &mdash; pick where to start.</p>
+
+    <div class="cards">
+      <a class="card" href="v1/">
+        <span class="card-arrow mono">&rarr;</span>
+        <div class="card-head"><span class="card-tag mono">v1</span><span class="card-title">Static</span></div>
+        <div class="card-desc">Try it once, zero setup. Scores live and generates a diagnosis &mdash; nothing is saved.</div>
+      </a>
+      <a class="card" href="v2/">
+        <span class="card-arrow mono">&rarr;</span>
+        <div class="card-head"><span class="card-tag mono">v2</span><span class="card-title">Auto-save</span></div>
+        <div class="card-desc">Same diagnostic with browser-local auto-save and restore. Good for filling out over multiple sittings on one device.</div>
+      </a>
+      <a class="card" href="v3/">
+        <span class="card-arrow mono">&rarr;</span>
+        <div class="card-head"><span class="card-tag mono">v3</span><span class="card-title">Shared team view</span></div>
+        <div class="card-desc">Real shared persistence via an Express + Postgres backend, so the whole team can see where everyone lands.</div>
+      </a>
+    </div>
+
+    <footer>
+      <a href="https://github.com/shayeeboy/ai-native-diagnostic">Source on GitHub</a>
+      <span>Built with Claude Code</span>
+    </footer>
+  </div>
+</body>
+</html>
