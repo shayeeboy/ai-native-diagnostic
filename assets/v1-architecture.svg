@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 250" font-family="'Segoe UI', Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="4.5" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#6B6E68"/>
+    </marker>
+  </defs>
+  <rect x="1" y="1" width="258" height="248" rx="14" fill="#F7F5F0" stroke="#D8D4C8"/>
+  <text x="130" y="30" text-anchor="middle" font-size="15" font-weight="700" fill="#FF5A1F">v1 · Static</text>
+  <text x="130" y="48" text-anchor="middle" font-size="10" fill="#6B6E68">nothing saved</text>
+
+  <rect x="50" y="70" width="160" height="44" rx="8" fill="#0E1110"/>
+  <text x="130" y="97" text-anchor="middle" font-size="13" font-weight="600" fill="#F7F5F0">User</text>
+
+  <line x1="130" y1="116" x2="130" y2="146" stroke="#6B6E68" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <rect x="30" y="150" width="200" height="58" rx="8" fill="#FCFBF8" stroke="#D8D4C8" stroke-width="1.5"/>
+  <text x="130" y="175" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0E1110">GitHub Pages</text>
+  <text x="130" y="194" text-anchor="middle" font-size="10" fill="#6B6E68">static HTML · live scoring</text>
+</svg>
