@@ -18,17 +18,19 @@ Same diagnostic, plus auto-save to the browser's local storage. A banner offers 
 
 **Use this when:** someone might fill it out over multiple sittings on the same device.
 
-## v3 — `v3-backend/` + Carrd embed
+## v3 — `v3/index.html` + `v3-backend/`
 
-Real shared persistence: a small Express + Postgres API (see `v3-backend/README.md`) backs a Carrd-embedded version of the front end, so everyone on the team can see everyone's completed diagnostics in one place.
+Real shared persistence: a small Express + Postgres API (see `v3-backend/README.md`) backs `v3/index.html`, so everyone on the team can see everyone's completed diagnostics in one place. The front end is a plain static page hosted on GitHub Pages, exactly like v1/v2 — it just calls the API instead of `localStorage`, and adds a team view listing everyone's results.
 
 **Use this when:** you want the team comparison view — not just "did I finish mine," but "where does the whole team land."
 
 **Architecture:**
-- **Front end:** diagnostic HTML/CSS embedded directly in a Carrd page (Carrd hosts no backend code itself)
+- **Front end:** static `v3/index.html` on GitHub Pages — set `API_BASE_URL` near the top of its `<script>` to your Render URL
 - **Backend:** Node.js/Express API, hosted on Render, free tier
 - **Database:** Postgres via Neon, free tier, no inactivity expiry
-- **Domain:** GoDaddy used only for DNS — a CNAME record points a subdomain (e.g. `api.yourdomain.com`) at Render
+- **CORS:** the front end's origin (e.g. `https://yourusername.github.io`) must be listed in the backend's `ALLOWED_ORIGINS`
+
+> A Carrd-embedded variant is still possible — see `v3-backend/carrd-integration-reference.html` — but GitHub Pages keeps all three versions hosted the same way.
 
 Full setup and deploy steps are in `v3-backend/README.md`.
 
@@ -42,6 +44,8 @@ Full setup and deploy steps are in `v3-backend/README.md`.
 │   └── index.html              # static, no persistence
 ├── v2/
 │   └── index.html              # static, browser-local auto-save
+├── v3/
+│   └── index.html              # static, shared persistence via the API below
 ├── v3-backend/
 │   ├── server.js                # Express API
 │   ├── db/
@@ -62,10 +66,10 @@ Full setup and deploy steps are in `v3-backend/README.md`.
 |---|---|---|
 | v1 | GitHub Pages | `https://yourusername.github.io/ai-native-diagnostic/v1/` |
 | v2 | GitHub Pages | `https://yourusername.github.io/ai-native-diagnostic/v2/` |
-| v3 frontend | Carrd | your existing Carrd site URL |
+| v3 frontend | GitHub Pages | `https://yourusername.github.io/ai-native-diagnostic/v3/` |
 | v3 backend | Render | `https://ai-native-diagnostic-api.onrender.com` (or a GoDaddy-CNAMEd custom domain) |
 
-GoDaddy's role across all three: **domain registrar and DNS only.** It doesn't host any of the application code — v1/v2 are static files on GitHub Pages, and v3's backend runs on Render, with GoDaddy DNS optionally pointing friendly subdomains at each.
+All three front ends are static files on GitHub Pages; v3's backend runs on Render. GoDaddy, if used, is **domain registrar and DNS only** — it hosts no application code, and can optionally point friendly subdomains at GitHub Pages / Render.
 
 ## What's the same across all three
 
