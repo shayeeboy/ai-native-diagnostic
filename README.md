@@ -84,6 +84,8 @@ All three versions are live and reachable from one place:
 - [v2 — browser-local auto-save](https://shayeeboy.github.io/ai-native-diagnostic/v2/)
 - [v3 — shared team persistence](https://shayeeboy.github.io/ai-native-diagnostic/v3/)
 
-## Source
+## Source & credit
 
-Built from the original `AI_Native_Team_Diagnostic.md` worksheet included in this repo.
+Built from the original [`AI_Native_Team_Diagnostic.md`](AI_Native_Team_Diagnostic.md) worksheet included in this repo.
+
+The worksheet is adapted from **"The AI Product Operating Model: How AI-Native Companies Win"** by **Aakash Gupta** and **Rohan Varma**, published in the [Product Growth](https://www.news.aakashg.com/p/ai-product-operating-model) newsletter on Substack. All credit for the underlying framework goes to the original authors; this repo is an interactive implementation of their diagnostic.
