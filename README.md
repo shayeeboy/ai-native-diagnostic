@@ -4,6 +4,8 @@ An interactive, self-scoring assessment that helps teams find out how AI-native 
 
 Three versions live in this repo, each adding one layer of capability.
 
+🌐 **Live site:** [shayeeboy.github.io/ai-native-diagnostic](https://shayeeboy.github.io/ai-native-diagnostic/) — landing page linking all three versions.
+
 ---
 
 ## v1 — `v1/index.html`
