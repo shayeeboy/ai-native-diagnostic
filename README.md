@@ -78,7 +78,11 @@ Real shared persistence. A small Express + Postgres API backs the front end so e
 
 ## Roadmap
 
-A future iteration may bring all versions together under a single Carrd-hosted portfolio site, with each diagnostic version accessible from one place.
+All three versions are live and reachable from one place:
+
+- [v1 — try once, nothing saved](https://shayeeboy.github.io/ai-native-diagnostic/v1/)
+- [v2 — browser-local auto-save](https://shayeeboy.github.io/ai-native-diagnostic/v2/)
+- [v3 — shared team persistence](https://shayeeboy.github.io/ai-native-diagnostic/v3/)
 
 ## Source
 
