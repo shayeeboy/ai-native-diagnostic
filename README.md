@@ -105,7 +105,7 @@ Each version adds one layer of capability — from a throwaway static page, to l
 
 ## Roadmap
 
-All three versions are live and reachable from one place — and form part of my broader portfolio alongside my other projects:
+All three versions are live and reachable from one place — and form part of my [broader portfolio](https://github.com/shayeeboy) alongside my other projects:
 
 - [v1 — try once, nothing saved](https://shayeeboy.github.io/ai-native-diagnostic/v1/)
 - [v2 — browser-local auto-save](https://shayeeboy.github.io/ai-native-diagnostic/v2/)
