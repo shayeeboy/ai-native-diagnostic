@@ -21,9 +21,9 @@ readiness read for their own team, and — in the v3 shared version — a
 manager or leadership group who wants to compare readiness *across* teams
 in one place rather than reading fragmented spreadsheet answers.
 
-**Success metric.** Primary: [[completion rate — % of started assessments
-that reach the generated diagnosis]]. Secondary: for v3, [[number of teams
-with at least one completed, shared result]] as a proxy for whether the
+**Success metric.** Primary: completion rate — % of started assessments
+that reach the generated diagnosis. Secondary: for v3, number of teams
+with at least one completed, shared result — as a proxy for whether the
 tool is actually being used for comparison, not just solo reflection. (No
 usage data has been collected yet — this is the metric I'd instrument
 first if this moved from portfolio piece to something a real team used.)
