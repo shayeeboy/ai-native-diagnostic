@@ -21,6 +21,11 @@ readiness read for their own team, and — in the v3 shared version — a
 manager or leadership group who wants to compare readiness *across* teams
 in one place rather than reading fragmented spreadsheet answers.
 
+**Objective.** Give teams a structured, repeatable way to answer "how
+AI-native are we, really" — replacing an informal, inconsistent
+conversation with a scored, comparable diagnostic that also outputs a
+concrete next step (the 90-day plan), not just a score.
+
 **Success metric.** Primary: completion rate — % of started assessments
 that reach the generated diagnosis. Secondary: for v3, number of teams
 with at least one completed, shared result — as a proxy for whether the
