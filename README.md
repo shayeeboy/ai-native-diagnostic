@@ -8,6 +8,48 @@ Three versions live in this repo, each adding one layer of capability.
 
 ---
 
+## Executive Summary
+
+**Problem.** Teams adopting AI tools rarely have a shared, structured way to
+assess how "AI-native" their operating model actually is. Readiness
+conversations tend to happen informally and inconsistently — one person's
+"we're pretty advanced" is another's "we've barely started" — which makes it
+hard to prioritize where to invest next.
+
+**User.** A team lead or functional manager who wants a fast, structured
+readiness read for their own team, and — in the v3 shared version — a
+manager or leadership group who wants to compare readiness *across* teams
+in one place rather than reading fragmented spreadsheet answers.
+
+**Success metric.** Primary: [[completion rate — % of started assessments
+that reach the generated diagnosis]]. Secondary: for v3, [[number of teams
+with at least one completed, shared result]] as a proxy for whether the
+tool is actually being used for comparison, not just solo reflection. (No
+usage data has been collected yet — this is the metric I'd instrument
+first if this moved from portfolio piece to something a real team used.)
+
+**Key trade-off decisions.**
+- **Persistence added incrementally (v1 → v2 → v3), not upfront.** Each
+  version only added the next layer of infrastructure once the previous
+  version's limitation was clear — avoided over-building a backend before
+  confirming anyone needed multi-device or team-shared results.
+- **Static front end (GitHub Pages) + thin Render API + Neon, over a single
+  full-stack framework.** Kept the front end as plain static pages and the
+  backend as a minimal Express API — trading some flexibility for near-zero
+  hosting cost and fast iteration, appropriate for a v1 still validating
+  whether the shared-comparison use case matters.
+- **Browser print-to-PDF instead of a generated report file.** Simpler and
+  zero-maintenance, at the cost of a less polished output than a
+  purpose-built PDF export.
+
+### How it works
+
+The three versions below show how it works, each adding one layer — from a
+zero-setup static page (v1), to browser-local auto-save (v2), to a shared
+Express + Neon backend for team-wide comparison (v3).
+
+---
+
 ## v1 — `v1/index.html`
 
 The original build. Fully interactive, scores live, generates a diagnosis report at the bottom. Nothing is saved — close the tab and it's gone.
