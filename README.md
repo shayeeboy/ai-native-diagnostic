@@ -106,11 +106,7 @@ Real shared persistence. A small Express + Postgres API backs the front end so e
 │   ├── .env.example
 │   └── README.md               # v3 backend setup and deploy instructions
 ├── render.yaml                 # declarative Render deploy config
-├── README.md                   # this file
-└── .git_prompts/               # reverse-engineered reproducibility prompts (see its README)
-    ├── phases/                 # one prompt per historical dev phase (01-03)
-    ├── sessions/               # one prompt per going-forward work session
-    └── MASTER_REVERSE_ENGINEER_PROMPT.md   # git-ignored (sensitive, local only)
+└── README.md                   # this file
 ```
 
 ## Hosting summary
