@@ -1,5 +1,2 @@
-# Sensitive meta-prompt — kept local, never cloned/forked (see .git_prompts/README.md)
-.git_prompts/MASTER_REVERSE_ENGINEER_PROMPT.md
-
 # Local-only reproducibility archive — never tracked/cloned/forked
 .git_prompts/
