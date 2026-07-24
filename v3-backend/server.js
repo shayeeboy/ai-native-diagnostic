@@ -147,6 +147,72 @@ app.delete('/api/sessions/:id', async (req, res) => {
   }
 });
 
+// ---------- Portfolio snapshot ----------
+// A machine-readable ReadinessSnapshot that aggregates every saved diagnostic
+// into per-capability averages, for downstream consumers (e.g. the AI Product &
+// Leadership Studio). Uses the same scoring the tool itself uses: five capability
+// groups, four statements each rated 1-5 (group max 20), total 0-100. Returns an
+// honest empty-state when no assessments have been recorded yet.
+const CAPABILITY_GROUPS = ['Workflow', 'Team Design', 'Context', 'AI Integration', 'Throughput'];
+const ITEMS_PER_GROUP = 4;
+const MAX_PER_GROUP = ITEMS_PER_GROUP * 5;
+
+app.get('/api/snapshot', async (req, res) => {
+  try {
+    const { rows } = await pool.query('SELECT ratings, total_score, updated_at FROM sessions');
+    const sessionCount = rows.length;
+    const lastUpdated = rows.reduce((mx, r) => (!mx || r.updated_at > mx ? r.updated_at : mx), null);
+    const base = { productId: 'ai-native-diagnostic', sessionCount, lastUpdated, provenance: 'live:aggregate(sessions)' };
+
+    if (sessionCount === 0) {
+      return res.json({
+        ...base,
+        teamMaturityScore: null,
+        aiReadinessScore: null,
+        adoptionScore: null,
+        capabilityAssessment: [],
+        riskIndicators: [],
+        recommendations: ['No assessments recorded yet — complete the diagnostic to populate live readiness data.'],
+      });
+    }
+
+    // Per-capability average across all sessions, scaled to 0-100.
+    const groupTotals = CAPABILITY_GROUPS.map(() => 0);
+    for (const r of rows) {
+      const ratings = typeof r.ratings === 'string' ? JSON.parse(r.ratings) : (r.ratings || {});
+      CAPABILITY_GROUPS.forEach((_, gi) => {
+        let sum = 0;
+        for (let ii = 0; ii < ITEMS_PER_GROUP; ii++) sum += Number(ratings[`${gi}-${ii}`] || 0);
+        groupTotals[gi] += (sum / MAX_PER_GROUP) * 100;
+      });
+    }
+    const capabilityAssessment = CAPABILITY_GROUPS.map((dimension, gi) => ({
+      dimension,
+      score: Math.round(groupTotals[gi] / sessionCount),
+    }));
+
+    const aiReadinessScore = Math.round(rows.reduce((s, r) => s + Number(r.total_score || 0), 0) / sessionCount);
+    const teamMaturityScore = Math.round(capabilityAssessment.reduce((s, c) => s + c.score, 0) / capabilityAssessment.length);
+    const aiIntegration = capabilityAssessment.find((c) => c.dimension === 'AI Integration');
+    const adoptionScore = aiIntegration ? aiIntegration.score : null; // AI-integration maturity as an adoption proxy
+
+    const sev = (score) => (score < 40 ? 'high' : score < 55 ? 'medium' : 'low');
+    const riskIndicators = capabilityAssessment
+      .filter((c) => c.score < 55)
+      .map((c) => ({ label: `${c.dimension} maturity below target`, severity: sev(c.score) }));
+
+    const weakest = [...capabilityAssessment].sort((a, b) => a.score - b.score).slice(0, 2);
+    const recommendations = weakest.map(
+      (c) => `Strengthen ${c.dimension} — averaging ${c.score}/100 across ${sessionCount} assessment(s).`
+    );
+
+    res.json({ ...base, teamMaturityScore, aiReadinessScore, adoptionScore, capabilityAssessment, riskIndicators, recommendations });
+  } catch (err) {
+    console.error('GET /api/snapshot failed:', err.message);
+    res.status(500).json({ error: 'Could not build snapshot.' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`AI-Native Diagnostic API listening on port ${PORT}`);
