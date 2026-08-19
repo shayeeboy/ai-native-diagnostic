@@ -164,9 +164,24 @@ app.get('/api/snapshot', async (req, res) => {
     const lastUpdated = rows.reduce((mx, r) => (!mx || r.updated_at > mx ? r.updated_at : mx), null);
     const base = { productId: 'ai-native-diagnostic', sessionCount, lastUpdated, provenance: 'live:aggregate(sessions)' };
 
+    // Honest observability: process liveness + recent-usage/freshness derived from rows already fetched.
+    // No request telemetry exists here, so latency/error-rate/throughput are intentionally omitted.
+    const now = Date.now();
+    const withinDays = (ts, d) => ts && (now - new Date(ts).getTime()) <= d * 864e5;
+    const scored = rows.filter((r) => Number(r.total_score) > 0).length;
+    const observability = {
+      uptimeSeconds: Math.round(process.uptime()),
+      startedAt: new Date(now - process.uptime() * 1000).toISOString(),
+      activeSessions7d: rows.filter((r) => withinDays(r.updated_at, 7)).length,
+      activeSessions30d: rows.filter((r) => withinDays(r.updated_at, 30)).length,
+      freshnessDays: lastUpdated ? Math.floor((now - new Date(lastUpdated).getTime()) / 864e5) : null,
+      completionRate: sessionCount ? Math.round((scored / sessionCount) * 100) : null,
+    };
+
     if (sessionCount === 0) {
       return res.json({
         ...base,
+        observability,
         teamMaturityScore: null,
         aiReadinessScore: null,
         adoptionScore: null,
@@ -206,7 +221,7 @@ app.get('/api/snapshot', async (req, res) => {
       (c) => `Strengthen ${c.dimension} — averaging ${c.score}/100 across ${sessionCount} assessment(s).`
     );
 
-    res.json({ ...base, teamMaturityScore, aiReadinessScore, adoptionScore, capabilityAssessment, riskIndicators, recommendations });
+    res.json({ ...base, observability, teamMaturityScore, aiReadinessScore, adoptionScore, capabilityAssessment, riskIndicators, recommendations });
   } catch (err) {
     console.error('GET /api/snapshot failed:', err.message);
     res.status(500).json({ error: 'Could not build snapshot.' });
