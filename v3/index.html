@@ -1434,11 +1434,32 @@
     };
   }
 
+  // True once the user has actually started the assessment — any answer beyond
+  // just their name. Mirrors the restore-time hasContent check below.
+  function hasAssessmentContent(){
+    return !!(
+      state.bottleneck || state.bnWhy.trim() || state.finalQ.trim() ||
+      state.flowStages.size ||
+      Object.values(state.ratings).some(v=>v) ||
+      Object.values(state.canvas).some(v=>v && v.trim()) ||
+      Object.values(state.ssap).some(v=>v && v.trim())
+    );
+  }
+
   function scheduleSave(){
     // The backend requires a name; don't call it until there's one.
     if(!state.userName.trim()){
       saveDot.className = 'vitals-save-dot';
       saveLabel.textContent = 'Add your name to save';
+      return;
+    }
+    // Don't CREATE a row for a name alone — otherwise typing a name and
+    // scrolling away logs an empty, 0-score assessment that pollutes the team
+    // view and the readiness snapshot. Once a real row exists (currentId), keep
+    // auto-saving so edits (including clearing fields) still persist.
+    if(!Store.currentId && !hasAssessmentContent()){
+      saveDot.className = 'vitals-save-dot';
+      saveLabel.textContent = 'Answer a question to save';
       return;
     }
     saveDot.className = 'vitals-save-dot saving';
