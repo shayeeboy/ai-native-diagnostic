@@ -18,5 +18,7 @@ services:
         sync: false   # set manually in the Render dashboard — never store secrets in this file
       - key: ALLOWED_ORIGINS
         sync: false   # e.g. https://yourproject.carrd.co
+      - key: TEAM_ACCESS_CODE
+        sync: false   # shared team code for the team view; unset = team view closed
       - key: NODE_VERSION
         value: 20.11.0

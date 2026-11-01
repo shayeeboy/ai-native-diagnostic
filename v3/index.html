@@ -754,6 +754,8 @@
   .btn-ghost:hover{background:var(--ink); color:var(--paper);}
 
   /* ---------- team view (v3) ---------- */
+  .team-code{margin:0 0 16px; max-width:520px; flex-wrap:wrap; gap:12px;}
+  .team-code[hidden]{display:none;}
   .team-list{
     display:flex;
     flex-direction:column;
@@ -891,7 +893,7 @@
       <label class="mono" for="userName">Your name</label>
       <input type="text" id="userName" placeholder="Required &mdash; this labels your entry in the team view">
     </div>
-    <div class="hero-name-hint">Answers save automatically to the shared team database as you go. Everyone with this link can see everyone's completed diagnostics in the team view at the bottom.</div>
+    <div class="hero-name-hint">Answers save automatically to the shared team database as you go. Teammates with your team's access code can see everyone's name, score and bottleneck in the team view at the bottom.</div>
   </header>
 
   <!-- STEP 1: WORKFLOW MAP -->
@@ -1085,7 +1087,12 @@
       <span class="step-label">Team view</span>
     </div>
     <h2 class="step-title">Where the whole team lands</h2>
-    <p class="step-intro">Everyone who's completed the diagnostic, newest first. Your own entry is highlighted.</p>
+    <p class="step-intro">Everyone who's completed the diagnostic, newest first. Your own entry is highlighted. The team view needs your team's access code.</p>
+    <form class="hero-name team-code" id="teamCodeForm" hidden>
+      <label class="mono" for="teamCode">Team code</label>
+      <input type="password" id="teamCode" autocomplete="off" placeholder="Ask whoever shared this diagnostic">
+      <button class="btn btn-ghost" type="submit">Open team view</button>
+    </form>
     <div class="team-list" id="teamList"><div class="team-empty mono">Loading team results&hellip;</div></div>
     <button class="btn btn-ghost" id="refreshTeamBtn">Refresh</button>
   </section>
@@ -1101,11 +1108,27 @@
   // e.g. https://shayeeboy.github.io — or the browser will block these calls.
   const API_BASE_URL = 'https://ai-native-diagnostic.onrender.com'; // Render service URL
   const SESSION_ID_KEY = 'ai-native-diagnostic:session-id';
+  const SESSION_EDIT_KEY = 'ai-native-diagnostic:session-key';
+  const TEAM_CODE_KEY = 'ai-native-diagnostic:team-code';
+
+  const readLocal = (k) => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+  const writeLocal = (k, v) => { try{ v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); }catch(e){} };
+
+  // Credentials the API checks: this browser's edit key for its own session,
+  // and the shared team code (needed for the team view and for older entries).
+  function accessHeaders(){
+    const h = {};
+    const key = readLocal(SESSION_EDIT_KEY);
+    const code = readLocal(TEAM_CODE_KEY);
+    if(key) h['X-Session-Key'] = key;
+    if(code) h['X-Team-Code'] = code;
+    return h;
+  }
 
   // ---------- STORAGE ADAPTER ----------
   // Same three-method shape as v1/v2's Store — but backed by the shared API
   // instead of localStorage, so results are visible to the whole team.
-  // localStorage is used only to remember *which* session is "mine" so a
+  // localStorage remembers *which* session is "mine" (and its edit key) so a
   // reload can resume and re-save the same row instead of creating a new one.
   const Store = {
     currentId: null,
@@ -1114,13 +1137,14 @@
       try{
         const res = await fetch(`${API_BASE_URL}/api/sessions`, {
           method:'POST',
-          headers:{'Content-Type':'application/json'},
+          headers:{'Content-Type':'application/json', ...accessHeaders()},
           body: JSON.stringify({ id: this.currentId, ...data })
         });
         if(!res.ok) throw new Error('Save failed: ' + res.status);
         const saved = await res.json();
         this.currentId = saved.id;
-        try{ localStorage.setItem(SESSION_ID_KEY, saved.id); }catch(e){}
+        writeLocal(SESSION_ID_KEY, saved.id);
+        if(saved.editKey) writeLocal(SESSION_EDIT_KEY, saved.editKey);
         return true;
       }catch(e){
         console.warn('Save failed:', e);
@@ -1129,11 +1153,16 @@
     },
 
     async load(){
-      let savedId = null;
-      try{ savedId = localStorage.getItem(SESSION_ID_KEY); }catch(e){}
+      const savedId = readLocal(SESSION_ID_KEY);
       if(!savedId) return null;
       try{
-        const res = await fetch(`${API_BASE_URL}/api/sessions/${savedId}`);
+        const res = await fetch(`${API_BASE_URL}/api/sessions/${savedId}`, { headers: accessHeaders() });
+        if(res.status === 403 || res.status === 404){
+          // Not ours to resume (or gone) — start fresh rather than overwrite it.
+          writeLocal(SESSION_ID_KEY, null);
+          writeLocal(SESSION_EDIT_KEY, null);
+          return null;
+        }
         if(!res.ok) return null;
         this.currentId = savedId;
         return normalizeRow(await res.json());
@@ -1145,9 +1174,10 @@
 
     async clear(){
       if(this.currentId){
-        try{ await fetch(`${API_BASE_URL}/api/sessions/${this.currentId}`, { method:'DELETE' }); }catch(e){}
+        try{ await fetch(`${API_BASE_URL}/api/sessions/${this.currentId}`, { method:'DELETE', headers: accessHeaders() }); }catch(e){}
       }
-      try{ localStorage.removeItem(SESSION_ID_KEY); }catch(e){}
+      writeLocal(SESSION_ID_KEY, null);
+      writeLocal(SESSION_EDIT_KEY, null);
       this.currentId = null;
       return true;
     }
@@ -1535,11 +1565,31 @@
   const teamList = document.getElementById('teamList');
   const refreshTeamBtn = document.getElementById('refreshTeamBtn');
 
+  const teamCodeForm = document.getElementById('teamCodeForm');
+  const teamCodeInput = document.getElementById('teamCode');
+
+  teamCodeForm.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const code = teamCodeInput.value.trim();
+    if(!code) return;
+    writeLocal(TEAM_CODE_KEY, code);
+    teamCodeInput.value = '';
+    loadTeamResults();
+  });
+
   async function loadTeamResults(){
     teamList.innerHTML = '<div class="team-empty mono">Loading team results…</div>';
     try{
-      const res = await fetch(`${API_BASE_URL}/api/sessions`);
+      const res = await fetch(`${API_BASE_URL}/api/sessions`, { headers: accessHeaders() });
+      if(res.status === 403){
+        const hadCode = !!readLocal(TEAM_CODE_KEY);
+        writeLocal(TEAM_CODE_KEY, null);
+        teamCodeForm.hidden = false;
+        teamList.innerHTML = `<div class="team-empty mono">${hadCode ? 'That team code didn’t work — check it and try again.' : 'Enter your team code to see everyone’s results.'}</div>`;
+        return;
+      }
       if(!res.ok) throw new Error('status ' + res.status);
+      teamCodeForm.hidden = true;
       renderTeam(await res.json());
     }catch(e){
       console.warn('Team load failed:', e);

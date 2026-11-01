@@ -28,5 +28,9 @@ CREATE TABLE IF NOT EXISTS sessions (
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- SHA-256 of the per-session edit key (the key itself lives only in the owner's
+-- browser). Additive for databases created before access control existed.
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS edit_key_hash TEXT;
+
 -- Speeds up "list everyone's results, newest first" on the team view
 CREATE INDEX IF NOT EXISTS idx_sessions_created_at ON sessions (created_at DESC);

@@ -33,10 +33,11 @@ curl http://localhost:3000/health
 | Method | Path | Does |
 |---|---|---|
 | `GET` | `/health` | Confirms the API and DB connection are both up |
-| `POST` | `/api/sessions` | Create a session (omit `id`) or update one (include `id`) |
-| `GET` | `/api/sessions` | List all saved sessions, newest first — the team view |
-| `GET` | `/api/sessions/:id` | Fetch one session |
-| `DELETE` | `/api/sessions/:id` | Delete one session |
+| `POST` | `/api/sessions` | Create a session (omit `id`; response includes a one-time `editKey`) or update one (include `id`; needs `X-Session-Key` or `X-Team-Code`) |
+| `GET` | `/api/sessions` | List saved sessions (name, score, bottleneck, dates), newest first — the team view; needs `X-Team-Code` |
+| `GET` | `/api/sessions/:id` | Fetch one session; needs `X-Session-Key` or `X-Team-Code` |
+| `DELETE` | `/api/sessions/:id` | Delete one session; needs `X-Session-Key` or `X-Team-Code` |
+| `GET` | `/api/snapshot` | Aggregate readiness scores for the Studio (no names or free text) |
 
 `POST /api/sessions` body shape (same fields as v2's local save, plus `userName`):
 
@@ -63,6 +64,7 @@ curl http://localhost:3000/health
 5. Add environment variables in the Render dashboard:
    - `DATABASE_URL` — your Neon connection string
    - `ALLOWED_ORIGINS` — your Carrd site's URL(s), comma-separated (e.g. `https://yourproject.carrd.co`)
+   - `TEAM_ACCESS_CODE` — a long random code you share with the team; unset keeps the team view closed
 6. Deploy. Render gives you a URL like `https://ai-native-diagnostic-api.onrender.com`
 7. Run the migration once against the live database — either run `npm run migrate` locally with the same `DATABASE_URL`, or paste `db/schema.sql` into Neon's SQL editor directly
 
@@ -82,5 +84,7 @@ Alternatively, use the `render.yaml` in the repo root with Render's **New → Bl
 
 ## Security notes for a team tool like this
 
-- There's no authentication on these endpoints by design — anyone with the API URL can read all sessions and submit new ones, matching "team — everyone using this link can see each other's results." If this ever needs to be restricted to known teammates, the next step is a shared access code or simple per-user token, not a separate project — flag it and it can be added.
-- `ALLOWED_ORIGINS` is the only access control in place right now — it stops random websites from calling the API via browser JS, but doesn't stop direct API calls (e.g. via curl). That's an acceptable tradeoff for an internal team tool; revisit if this ever becomes public-facing.
+- **Team view needs the team code.** `GET /api/sessions` returns `403` unless the request carries `X-Team-Code` matching `TEAM_ACCESS_CODE`, and it only returns what the team view shows (no free-text answers). If `TEAM_ACCESS_CODE` is unset, the team view is closed.
+- **Each session has an edit key.** Creating a session returns a random `editKey` once; only its SHA-256 hash is stored. Reading, updating or deleting that session needs the key (`X-Session-Key`) or the team code. Sessions created before this existed have no key and are reachable with the team code only.
+- `ALLOWED_ORIGINS` still stops other websites calling the API from the browser; the checks above are what stop direct calls (e.g. via curl).
+- `npm test` exercises these rules against an in-memory fake database.
