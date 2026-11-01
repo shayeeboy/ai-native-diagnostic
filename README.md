@@ -84,6 +84,13 @@ Real shared persistence. A small Express + Postgres API backs the front end so e
 - **Backend:** Node.js/Express API hosted on Render (free tier)
 - **Database:** Postgres via Neon (free tier, no inactivity expiry)
 
+**Access control (added 2026-11-01).** The team view was originally readable by anyone who had the API URL, including every respondent's name and free-text answers, and any session could be edited or deleted by its id. Now:
+- the team view needs a **team access code** (`TEAM_ACCESS_CODE` on Render) and shows only name, score, bottleneck and date — no free text. If the code isn't set, the team view stays closed;
+- each new session gets a private **edit key** that stays in the person's browser (only its hash is stored), and reading, updating or deleting a session needs that key or the team code;
+- the aggregate `/api/snapshot` used by the Studio is unchanged (no names or free text).
+
+Covered by `npm test` in `v3-backend/` (8 access-control tests). Details in [`v3-backend/README.md`](v3-backend/README.md).
+
 ---
 
 ## Repo layout
@@ -97,11 +104,13 @@ Real shared persistence. A small Express + Postgres API backs the front end so e
 ├── v3/
 │   └── index.html              # static front end, calls the Render API
 ├── v3-backend/
-│   ├── server.js               # Express API (4 CRUD endpoints)
+│   ├── server.js               # Express API (session CRUD + snapshot, with access control)
 │   ├── db/
 │   │   ├── schema.sql          # Postgres table definition
 │   │   ├── migrate.js          # applies schema.sql to DATABASE_URL
 │   │   └── pool.js             # shared Postgres connection pool
+│   ├── test/
+│   │   └── access.test.js      # access-control tests (in-memory fake DB)
 │   ├── package.json
 │   ├── .env.example
 │   └── README.md               # v3 backend setup and deploy instructions
